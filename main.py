@@ -4,9 +4,12 @@ import tensorflow as tf
 from PIL import Image
 import io
 import numpy as np
-
+import os
 # Charger le modèle TensorFlow pré-entraîné
-model = tf.keras.models.load_model("./models/model_ubnet_MobileNetV3Large.h5")
+script_dir = os.path.dirname(__file__)
+model = tf.keras.models.load_model(os.path.join (script_dir,
+                                                 'models',
+                                                 'model_ubnet_MobileNetV3Large.h5'))
 
 # Créer l'instance de l'application FastAPI
 app = FastAPI()
