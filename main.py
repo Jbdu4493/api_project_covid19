@@ -5,6 +5,9 @@ from PIL import Image
 import io
 import numpy as np
 import os
+from io import BytesIO 
+from grad_cam import grad_cam_fonction
+import base64
 # Charger le modèle TensorFlow pré-entraîné
 script_dir = os.path.dirname(__file__)
 model = tf.keras.models.load_model(os.path.join (script_dir,
@@ -17,8 +20,9 @@ app = FastAPI()
 # Indice des classes
 idx_class = ['Covid', 'Lung Opacity', 'Normal', 'Viral Pneumonia']
 
+
 # Définir le point de terminaison pour l'API
-@app.post('/predict')
+@app.post('/covid19_detect/predict')
 async def predict(file: UploadFile = File(...)):
     # Lire l'image à partir du fichier envoyé
     image_bytes = await file.read()
@@ -28,15 +32,23 @@ async def predict(file: UploadFile = File(...)):
     # Assurez-vous que l'image est redimensionnée à la taille attendue par le modèle (256x256x3)
     image = image.resize((256, 256))
     image_array = tf.keras.preprocessing.image.img_to_array(image)
-    image_array = tf.expand_dims(image_array, 0)  # Ajouter une dimension de lot (batch dimension)
+    image_array_ready_pred = tf.expand_dims(image_array, 0)  # Ajouter une dimension de lot (batch dimension)
     
     # Faire une prédiction avec le modèle TensorFlow
-    prediction = model.predict(image_array)[0]
+    prediction = model.predict(image_array_ready_pred)[0]
 
     idx_max_pred = prediction.argmax()
-    print(prediction,idx_max_pred)
-    # Convertir la prédiction en chaîne de caractères (à adapter selon votre modèle)
-    return {'prediction': f'{idx_class[idx_max_pred]}',"proba": f"{prediction[idx_max_pred]}"}
+
+    # Calcul du grad-Cam
+    grad_cam_image = grad_cam_fonction(image_array,model,2, "multiply_101",224)
+    buffer = io.BytesIO()
+    grad_cam_image.save(buffer, 'png')
+    buffer.seek(0)
+    
+    data = buffer.read()
+    data = base64.b64encode(data).decode()
+
+    return {'prediction': f'{idx_class[idx_max_pred]}',"proba": f"{prediction[idx_max_pred]}","grad_cam":data}
 
 if __name__ == '__main__':
     uvicorn.run(app, host='0.0.0.0', port=8000)
