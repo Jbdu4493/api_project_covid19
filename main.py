@@ -69,7 +69,7 @@ async def predict(file: UploadFile = File(...)):
     data = base64.b64encode(data).decode()
     
     data_return = {'prediction': f'{idx_class[idx_max_pred]}',"proba": f"{prediction[idx_max_pred]}","grad_cam":data}
-    logger.debug(f'{data_return }')
+    logger.debug(f'---{data_return }')
 
     return data_return
 
