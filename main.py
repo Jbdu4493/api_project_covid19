@@ -8,11 +8,31 @@ import os
 from io import BytesIO 
 from grad_cam import grad_cam_fonction
 import base64
+import logging
+import datetime
+
 # Charger le modèle TensorFlow pré-entraîné
+
+
 script_dir = os.path.dirname(__file__)
 model = tf.keras.models.load_model(os.path.join (script_dir,
                                                  'models',
                                                  'model_ubnet_MobileNetV3Large.h5'))
+
+logging.basicConfig(level=logging.DEBUG)
+
+# Créer un formateur de messages
+formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+
+timestamp = datetime.datetime.now().strftime('%Y-%m-%d%H%M%S')
+
+# Créer un gestionnaire de sortie vers un fichier .log
+file_handler = logging.FileHandler(os.path.join(script_dir,f'app_{timestamp}.log'))
+file_handler.setFormatter(formatter)
+
+# Ajouter le gestionnaire à la racine du logger
+logger = logging.getLogger('')
+logger.addHandler(file_handler)
 
 # Créer l'instance de l'application FastAPI
 app = FastAPI()
@@ -47,8 +67,11 @@ async def predict(file: UploadFile = File(...)):
     
     data = buffer.read()
     data = base64.b64encode(data).decode()
+    
+    data_return = {'prediction': f'{idx_class[idx_max_pred]}',"proba": f"{prediction[idx_max_pred]}","grad_cam":data}
+    logger.debug(f'{data_return }')
 
-    return {'prediction': f'{idx_class[idx_max_pred]}',"proba": f"{prediction[idx_max_pred]}","grad_cam":data}
+    return data_return
 
 if __name__ == '__main__':
     uvicorn.run(app, host='0.0.0.0', port=8000)
