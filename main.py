@@ -9,8 +9,7 @@ from io import BytesIO
 from grad_cam import grad_cam_fonction
 import base64
 import logging
-from datetime import datetime
-import pytz
+import datetime
 
 # Charger le modèle TensorFlow pré-entraîné
 
@@ -22,25 +21,10 @@ model = tf.keras.models.load_model(os.path.join (script_dir,
 
 logging.basicConfig(level=logging.DEBUG)
 
-
-desired_timezone = pytz.timezone('Europe/Paris')
-
-# Créer un objet de date et d'heure au fuseau horaire actuel
-current_time = datetime.now()
-
-# Convertir la date et l'heure au fuseau horaire désiré
-localized_time = current_time.astimezone(desired_timezone)
-
-# Créer un objet Formatter avec le format souhaité
-formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-
-# Configurer le Formatter avec l'objet de date et d'heure localisée
-formatter.converter = lambda *args: localized_time.timetuple()
-
 # Créer un formateur de messages
 formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 
-timestamp = datetime.now().strftime('%Y-%m-%d%H%M%S')
+timestamp = datetime.datetime.now().strftime('%Y-%m-%d%H%M%S')
 
 # Créer un gestionnaire de sortie vers un fichier .log
 file_handler = logging.FileHandler(os.path.join(script_dir,f'app_{timestamp}.log'))
@@ -85,7 +69,7 @@ async def predict(file: UploadFile = File(...)):
     data = base64.b64encode(data).decode()
     
     data_return = {'prediction': f'{idx_class[idx_max_pred]}',"proba": f"{prediction[idx_max_pred]}","grad_cam":data}
-    logger.debug(f'---{data_return }')
+    logger.debug(f'--{data_return }')
 
     return data_return
 
